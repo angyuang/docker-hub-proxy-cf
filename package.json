@@ -1,0 +1,20 @@
+{
+  "name": "docker-hub-proxy-cf",
+  "version": "1.0.0",
+  "description": "Docker 镜像加速代理 · Cloudflare Workers 版（docker-hub-proxy 的 JS 重写）",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init:local": "wrangler d1 execute docker-proxy-db --local --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute docker-proxy-db --remote --file=./schema.sql",
+    "test": "node test/smoke.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

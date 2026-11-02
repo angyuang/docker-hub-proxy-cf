@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker Hub Proxy · 控制台</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #243247;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-strong: #0ea5e9;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --orange: #fb923c;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 24px clamp(12px, 4vw, 40px) 60px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 30px; }
+  .brand h1 { font-size: 20px; font-weight: 700; }
+  .brand p { color: var(--muted); font-size: 12px; }
+
+  .auth-tip {
+    background: rgba(251, 191, 36, .08);
+    border: 1px solid rgba(251, 191, 36, .35);
+    color: var(--yellow);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .hidden { display: none !important; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .card-label { color: var(--muted); font-size: 12px; }
+  .card-value { font-size: 22px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .card-sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .panel-head h2 { font-size: 15px; font-weight: 600; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 14px; font-size: 13px; cursor: pointer;
+    transition: all .15s ease;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+  .btn.primary:hover:not(:disabled) { background: var(--accent); color: #06283d; }
+  .btn.ghost { background: transparent; }
+  .btn.danger-mini { padding: 3px 8px; font-size: 12px; border-radius: 6px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  tbody tr:hover { background: rgba(56, 189, 248, .05); }
+  td.wrap { white-space: normal; word-break: break-all; min-width: 160px; }
+  .muted { color: var(--muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+  .dot.on { background: var(--green); box-shadow: 0 0 6px rgba(52, 211, 153, .7); }
+  .dot.off { background: var(--red); box-shadow: 0 0 6px rgba(248, 113, 113, .5); }
+
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .badge.green { background: rgba(52, 211, 153, .12); color: var(--green); }
+  .badge.yellow { background: rgba(251, 191, 36, .12); color: var(--yellow); }
+  .badge.orange { background: rgba(251, 146, 60, .12); color: var(--orange); }
+  .badge.red { background: rgba(248, 113, 113, .12); color: var(--red); }
+  .badge.gray { background: rgba(148, 163, 184, .12); color: var(--muted); }
+  .badge.blue { background: rgba(56, 189, 248, .12); color: var(--accent); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .chart { display: flex; align-items: flex-end; gap: 10px; height: 200px; padding: 10px 4px 0; }
+  .chart .bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; height: 100%; min-width: 0; }
+  .chart .bar { width: 70%; max-width: 46px; background: linear-gradient(180deg, var(--accent), rgba(56, 189, 248, .35)); border-radius: 6px 6px 2px 2px; min-height: 2px; transition: height .3s ease; }
+  .chart .bar-val { font-size: 10px; color: var(--muted); white-space: nowrap; }
+  .chart .bar-label { font-size: 11px; color: var(--muted); }
+  .chart-empty { color: var(--muted); text-align: center; padding: 60px 0; width: 100%; }
+
+  .empty-row { color: var(--muted); text-align: center; padding: 24px 0 !important; }
+
+  .modal-mask {
+    position: fixed; inset: 0; background: rgba(2, 6, 23, .7);
+    display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px;
+  }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { font-size: 16px; margin-bottom: 14px; }
+  .modal label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+  .modal input, .modal select {
+    width: 100%; margin-top: 4px;
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; font-size: 13px; outline: none;
+  }
+  .modal input:focus, .modal select:focus { border-color: var(--accent); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 10px; padding: 10px 18px; font-size: 13px; z-index: 99;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+  }
+  .toast.error { border-color: rgba(248, 113, 113, .5); color: var(--red); }
+
+  footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="logo">🐳</span>
+    <div>
+      <h1>Docker Hub Proxy</h1>
+      <p>Cloudflare Workers 镜像加速控制台</p>
+      <span class="sep">·</span>
+      <a class="sub-link" href="https://github.com/xingfeng7788/docker-hub-proxy" target="_blank" rel="noopener noreferrer";>Docker 镜像加速与代理管理工具Docker Hub Proxy</a>
+      <span class="sep">·</span>
+      <a class="sub-link" href="https://status.anye.xyz/" target="_blank" rel="noopener noreferrer";>容器镜像监控</a>
+    </div>
+  </div>
+  <button class="btn ghost" id="btnRefresh">↻ 刷新</button>
+</header>
+
+<div id="authTip" class="auth-tip hidden">
+  ⚠️ 需要管理员认证：请在浏览器弹出的登录框中输入 ADMIN_USER / ADMIN_PASS（wrangler.toml 或 secret 中配置），然后点击刷新。
+</div>
+
+<section class="cards">
+  <div class="card">
+    <div class="card-label">可用节点</div>
+    <div class="card-value" id="statNodes">–</div>
+    <div class="card-sub" id="statNodesSub"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">今日流量</div>
+    <div class="card-value" id="statToday">–</div>
+    <div class="card-sub" id="statTodayReq"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">昨日流量</div>
+    <div class="card-value" id="statYesterday">–</div>
+    <div class="card-sub" id="statYesterdayReq"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">近 7 天流量</div>
+    <div class="card-value" id="stat7d">–</div>
+    <div class="card-sub" id="stat7dReq"></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>代理节点</h2>
+    <div class="actions">
+      <button class="btn" id="btnSpeed">⚡ 一键测速</button>
+      <button class="btn" id="btnFree">⬇ 获取免费节点</button>
+      <button class="btn primary" id="btnAdd">＋ 添加节点</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>状态</th><th>名称</th><th>上游地址</th><th>类型 / 前缀</th>
+          <th>延迟</th><th>已代理流量</th><th>最后检测</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="nodesBody">
+        <tr><td colspan="8" class="empty-row">加载中…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="grid2">
+  <section class="panel">
+    <div class="panel-head"><h2>近 7 天流量</h2></div>
+    <div class="chart" id="chart"><div class="chart-empty">暂无数据</div></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>最近拉取</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>时间</th><th>镜像</th><th>标签</th><th>客户端 IP</th></tr></thead>
+        <tbody id="pullsBody">
+          <tr><td colspan="4" class="empty-row">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<footer>docker pull 你的域名/library/nginx:latest · ghcr 镜像使用 你的域名/ghcr/owner/repo:tag</footer>
+
+<!-- 添加 / 编辑节点弹窗 -->
+<div id="modalMask" class="modal-mask hidden">
+  <div class="modal">
+    <h3 id="modalTitle">添加节点</h3>
+    <label>名称
+      <input id="fName" placeholder="如：Cloudflare 公共镜像">
+    </label>
+    <label>上游地址 *
+      <input id="fUrl" placeholder="https://registry-1.docker.io">
+    </label>
+    <label>仓库类型
+      <select id="fType">
+        <option value="dockerhub">Docker Hub</option>
+        <option value="ghcr">GHCR（GitHub）</option>
+        <option value="gcr">GCR（Google）</option>
+        <option value="quay">Quay</option>
+        <option value="mcr">MCR（微软）</option>
+        <option value="elastic">Elastic</option>
+        <option value="nvcr">NVCR（NVIDIA）</option>
+      </select>
+    </label>
+    <label>路由前缀（非 Docker Hub 类型默认为其类型名，留空即可）
+      <input id="fPrefix" placeholder="如 ghcr">
+    </label>
+    <div class="row2">
+      <label>用户名（可选）
+        <input id="fUser" autocomplete="off">
+      </label>
+      <label>密码（可选）
+        <input id="fPass" type="password" autocomplete="off">
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="btnCancel">取消</button>
+      <button class="btn primary" id="btnSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+'use strict';
+const $ = (s) => document.querySelector(s);
+let nodes = [];
+let editingId = null;
+let autoRefreshTimer = null;
+
+/* ---------- 工具 ---------- */
+function fmtBytes(n) {
+  const v = Number(n) || 0;
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0, x = v;
+  while (x >= 1024 && i < units.length - 1) { x /= 1024; i++; }
+  return (i === 0 ? x : x.toFixed(2)) + ' ' + units[i];
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+function fmtTime(s) {
+  if (!s) return '–';
+  return String(s).replace('T', ' ').slice(0, 19);
+}
+let toastTimer = null;
+function toast(msg, isError = false) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 2600);
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {
+    headers: { 'content-type': 'application/json' },
+    ...opts,
+  });
+  if (r.status === 401) {
+    $('#authTip').classList.remove('hidden');
+    throw new Error('需要管理员认证');
+  }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+  return data;
+}
+
+/* ---------- 渲染 ---------- */
+function latencyBadge(n) {
+  if (!n.enabled) return '<span class="badge gray">已禁用</span>';
+  if (n.latency >= 9999) return '<span class="badge red">不可用</span>';
+  const cls = n.latency < 300 ? 'green' : n.latency < 800 ? 'yellow' : 'orange';
+  return `<span class="badge ${cls}">${Math.round(n.latency)} ms</span>`;
+}
+
+function renderNodes() {
+  const tbody = $('#nodesBody');
+  if (!nodes.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">暂无节点，点击「获取免费节点」或「添加节点」开始</td></tr>';
+    return;
+  }
+  tbody.innerHTML = nodes.map((n) => `
+    <tr>
+      <td><span class="dot ${n.enabled ? 'on' : 'off'}" title="${n.failure_reason ? esc(n.failure_reason) : '正常'}"></span></td>
+      <td class="wrap">${esc(n.name)}</td>
+      <td class="wrap muted">${esc(n.url)}</td>
+      <td>${esc(n.registry_type)}${n.route_prefix ? ` <span class="badge blue">/${esc(n.route_prefix)}/</span>` : ''}</td>
+      <td>${latencyBadge(n)}</td>
+      <td>${fmtBytes(n.download_bytes)}</td>
+      <td class="muted">${fmtTime(n.last_check)}</td>
+      <td>
+        <button class="btn danger-mini" data-edit="${n.id}">编辑</button>
+        <button class="btn danger-mini" data-del="${n.id}">删除</button>
+      </td>
+    </tr>`).join('');
+
+  tbody.querySelectorAll('[data-edit]').forEach((b) =>
+    b.addEventListener('click', () => openModal(nodes.find((x) => x.id === Number(b.dataset.edit)))));
+  tbody.querySelectorAll('[data-del]').forEach((b) =>
+    b.addEventListener('click', () => delNode(Number(b.dataset.del))));
+}
+
+function renderStats(traffic) {
+  // traffic 按日期倒序
+  const byDate = new Map(traffic.map((t) => [t.date, t]));
+  const today = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() + 8 * 3600_000 - 86400_000).toISOString().slice(0, 10);
+
+  const enabled = nodes.filter((n) => n.enabled && n.latency < 9999).length;
+  $('#statNodes').textContent = `${enabled} / ${nodes.length}`;
+  $('#statNodesSub').textContent = '可用 / 总数';
+
+  const t = byDate.get(today);
+  $('#statToday').textContent = t ? fmtBytes(t.download_bytes + t.upload_bytes) : '0 B';
+  $('#statTodayReq').textContent = t ? `${t.request_count} 次请求` : '今日暂无请求';
+  const y = byDate.get(yesterday);
+  $('#statYesterday').textContent = y ? fmtBytes(y.download_bytes + y.upload_bytes) : '0 B';
+  $('#statYesterdayReq').textContent = y ? `${y.request_count} 次请求` : '';
+
+  const sum = traffic.reduce((acc, x) => acc + Number(x.download_bytes || 0) + Number(x.upload_bytes || 0), 0);
+  const req = traffic.reduce((acc, x) => acc + Number(x.request_count || 0), 0);
+  $('#stat7d').textContent = fmtBytes(sum);
+  $('#stat7dReq').textContent = `${req} 次请求`;
+}
+
+function renderChart(traffic) {
+  const chart = $('#chart');
+  const list = [...traffic].reverse(); // 变成日期升序
+  if (!list.length) {
+    chart.innerHTML = '<div class="chart-empty">暂无数据</div>';
+    return;
+  }
+  const max = Math.max(...list.map((x) => Number(x.download_bytes || 0) + Number(x.upload_bytes || 0)), 1);
+  chart.innerHTML = list.map((x) => {
+    const v = Number(x.download_bytes || 0) + Number(x.upload_bytes || 0);
+    const h = Math.max(2, Math.round((v / max) * 150));
+    return `
+      <div class="bar-col" title="${esc(x.date)}：${fmtBytes(v)}（${x.request_count} 次请求）">
+        <div class="bar-val">${fmtBytes(v)}</div>
+        <div class="bar" style="height:${h}px"></div>
+        <div class="bar-label">${esc(String(x.date).slice(5))}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderPulls(pulls) {
+  const tbody = $('#pullsBody');
+  if (!pulls.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-row">暂无拉取记录</td></tr>';
+    return;
+  }
+  tbody.innerHTML = pulls.map((p) => `
+    <tr>
+      <td class="muted">${fmtTime(p.request_time)}</td>
+      <td class="wrap">${esc(p.image)}</td>
+      <td class="wrap">${esc(p.tag)}</td>
+      <td class="muted">${esc(p.client_ip || '–')}</td>
+    </tr>`).join('');
+}
+
+/* ---------- 数据加载 ---------- */
+async function loadAll() {
+  const [nodesRes, trafficRes, pullsRes] = await Promise.allSettled([
+    api('/admin/api/nodes'),
+    api('/admin/api/stats/traffic?days=7'),
+    api('/admin/api/stats/pulls?limit=20'),
+  ]);
+  if (nodesRes.status === 'fulfilled') { nodes = nodesRes.value; renderNodes(); }
+  const traffic = trafficRes.status === 'fulfilled' ? trafficRes.value : [];
+  renderStats(traffic);
+  renderChart(traffic);
+  if (pullsRes.status === 'fulfilled') renderPulls(pullsRes.value);
+  $('#authTip').classList.add('hidden');
+  if (!autoRefreshTimer) {
+    autoRefreshTimer = setInterval(() => loadAll().catch(() => {}), 60_000);
+  }
+}
+
+/* ---------- 节点操作 ---------- */
+function openModal(node) {
+  editingId = node ? node.id : null;
+  $('#modalTitle').textContent = node ? '编辑节点' : '添加节点';
+  $('#fName').value = node?.name ?? '';
+  $('#fUrl').value = node?.url ?? '';
+  $('#fType').value = node?.registry_type ?? 'dockerhub';
+  $('#fPrefix').value = node?.route_prefix ?? '';
+  $('#fUser').value = node?.username ?? '';
+  $('#fPass').value = node?.password ?? '';
+  $('#modalMask').classList.remove('hidden');
+}
+function closeModal() {
+  $('#modalMask').classList.add('hidden');
+  editingId = null;
+}
+
+async function saveNode() {
+  const payload = {
+    name: $('#fName').value.trim() || '未命名节点',
+    url: $('#fUrl').value.trim(),
+    registry_type: $('#fType').value,
+    route_prefix: $('#fPrefix').value.trim() || null,
+    username: $('#fUser').value.trim() || null,
+    password: $('#fPass').value || null,
+  };
+  if (!payload.url) { toast('请填写上游地址', true); return; }
+  $('#btnSave').disabled = true;
+  try {
+    if (editingId != null) {
+      await api(`/admin/api/nodes/${editingId}`, { method: 'PUT', body: JSON.stringify(payload) });
+      toast('节点已更新（含测速）');
+    } else {
+      await api('/admin/api/nodes', { method: 'POST', body: JSON.stringify(payload) });
+      toast('节点已添加（含测速）');
+    }
+    closeModal();
+    await loadAll();
+  } catch (e) {
+    toast('保存失败：' + e.message, true);
+  } finally {
+    $('#btnSave').disabled = false;
+  }
+}
+
+async function delNode(id) {
+  const n = nodes.find((x) => x.id === id);
+  if (!confirm(`确定删除节点「${n ? n.name : id}」？`)) return;
+  try {
+    await api(`/admin/api/nodes/${id}`, { method: 'DELETE' });
+    toast('节点已删除');
+    await loadAll();
+  } catch (e) {
+    toast('删除失败：' + e.message, true);
+  }
+}
+
+function setBusy(btn, busy, busyText) {
+  if (busy) {
+    btn.dataset.text = btn.textContent;
+    btn.textContent = busyText;
+    btn.disabled = true;
+  } else {
+    btn.textContent = btn.dataset.text || btn.textContent;
+    btn.disabled = false;
+  }
+}
+
+async function speedTest(btn) {
+  setBusy(btn, true, '测速中…');
+  try {
+    const r = await api('/admin/api/nodes/speedtest', { method: 'POST' });
+    toast(`测速完成：${r.tested} 个节点`);
+    await loadAll();
+  } catch (e) {
+    toast('测速失败：' + e.message, true);
+  } finally {
+    setBusy(btn, false);
+  }
+}
+
+async function fetchFree(btn) {
+  setBusy(btn, true, '抓取中…');
+  try {
+    const r = await api('/admin/api/nodes/fetch-free', { method: 'POST' });
+    toast(`抓取完成，新增 ${r.added} 个节点`);
+    await loadAll();
+  } catch (e) {
+    toast('抓取失败：' + e.message, true);
+  } finally {
+    setBusy(btn, false);
+  }
+}
+
+/* ---------- 事件 ---------- */
+ $('#btnRefresh').addEventListener('click', () => loadAll().catch((e) => toast(e.message, true)));
+ $('#btnAdd').addEventListener('click', () => openModal(null));
+ $('#btnCancel').addEventListener('click', closeModal);
+ $('#btnSave').addEventListener('click', saveNode);
+ $('#btnSpeed').addEventListener('click', (e) => speedTest(e.currentTarget));
+ $('#btnFree').addEventListener('click', (e) => fetchFree(e.currentTarget));
+ $('#modalMask').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
+ $('#fType').addEventListener('change', () => {
+  const t = $('#fType').value;
+  $('#fPrefix').placeholder = t === 'dockerhub' ? '留空即可' : t;
+  if (t !== 'dockerhub' && !$('#fPrefix').value.trim()) $('#fPrefix').value = t;
+  if (t === 'dockerhub') $('#fPrefix').value = '';
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+loadAll().catch((e) => toast(e.message, true));
+</script>
+</body>
+</html>

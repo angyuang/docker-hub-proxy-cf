@@ -1,0 +1,58 @@
+# ===========================================================================
+# Docker Hub Proxy · Cloudflare Workers 版
+# 部署前请把下方 database_id 替换为你自己的 D1 数据库 ID
+# ===========================================================================
+name = "docker-hub-proxy"
+main = "src/index.js"
+compatibility_date = "2025-10-01"
+
+# 静态管理界面（public/index.html），访问 "/" 时自动展示
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# 定时任务：
+#   */30 * * * *  —— 每 30 分钟对所有启用节点测速
+#   0 18 * * *    —— 每天 UTC 18:00（北京时间凌晨 2 点）抓取免费公共节点
+[triggers]
+crons = ["*/30 * * * *", "0 18 * * *"]
+
+[observability]
+enabled = true
+
+[vars]
+# 管理界面账号（ADMIN_PASS 建议用 `npx wrangler secret put ADMIN_PASS` 配置，
+# 不要明文写在 vars 里提交到仓库；未配置时管理 API 将拒绝访问）
+ADMIN_USER = "admin"
+ADMIN_PASS = ""
+
+# IP 白名单（逗号分隔，留空表示不限制）
+IP_WHITELIST = ""
+
+# 镜像黑白名单（正则表达式，作用于 /v2/ 之后的镜像路径，如 "library/nginx"）
+IMAGE_WHITELIST_REGEX = ""
+IMAGE_BLACKLIST_REGEX = ""
+
+# 无可用节点时的兜底上游
+DEFAULT_UPSTREAM = "https://registry-1.docker.io"
+
+# 免费节点列表来源（与原项目一致）
+FREE_NODE_SOURCE = "https://status.anye.xyz"
+
+# 302 重定向处理：passthrough = 原样透传给客户端（默认，与原项目一致）
+#                follow     = Worker 内部跟随重定向并流式回传（上游 CDN 被墙时使用）
+REDIRECT_MODE = "passthrough"
+
+# 是否在透传 302 时用 HEAD 请求估算镜像层大小（用于流量统计，会产生额外子请求）
+REDIRECT_SIZE_PROBE = "true"
+
+# 上游"响应头阶段"超时（毫秒）。到时未返回响应头则返回 502；
+# 响应头到达后不再计时，镜像层大文件流式下载不受影响
+UPSTREAM_TIMEOUT_MS = "15000"
+
+# D1 数据库绑定（部署前先 `npx wrangler d1 create docker-proxy-db`，
+# 然后把输出的 database_id 填到下面）
+[[d1_databases]]
+binding = "DB"
+database_name = "docker-proxy-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
