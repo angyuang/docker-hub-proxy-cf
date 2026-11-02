@@ -192,9 +192,10 @@ docker-hub-proxy-cf/
 - 原项目：[xingfeng7788/docker-hub-proxy](https://github.com/xingfeng7788/docker-hub-proxy)
 - 同类思路参考：[ciiiii/cloudflare-docker-proxy](https://github.com/ciiiii/cloudflare-docker-proxy)
 - 容器镜像监控：[容器镜像监控](https://status.anye.xyz)
-````
+
 
 ---
+
 # 功能及验证
 ✅ **全部 16 个文件交付完毕**。最终核对清单：
 
